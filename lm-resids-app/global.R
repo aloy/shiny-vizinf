@@ -1,9 +1,8 @@
 datasets <- c(
+  "Upload data",
   "HollywoodMovies",
   "NBAPlayers2015",
   "OlympicMarathon",
   "SampCountries",
-  "StudentSurvey",
-  "Enter data",
-  "Upload data"
+  "StudentSurvey"
 )

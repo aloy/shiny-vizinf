@@ -19,45 +19,50 @@ navbarPage(
   fluid = TRUE,
   tabPanel(
     "Enter data",
-    
+    useShinyjs(),
     fluidRow(
       
       column(4,
              wellPanel(
-               radioButtons("dataEntry", label = "Data entry method",
-                            choices = c("Preloaded" = "preloaded", 
-                                        "Upload file" = "upload", 
-                                        "Enter manually" = "enter"),
-                            selected = "preloaded",
-                            inline = TRUE),
-               
+               p("Select a preloaded data set from the below list, 
+            upload a data file, or enter the values of a variable."),           
+               selectInput(inputId = "inputData",
+                           label = "Select data set",
+                           choices = datasets,
+                           selected = "HollywoodMovies"),
                conditionalPanel(
-                 "input.dataEntry == 'preloaded'",
-                 selectInput(inputId = "inputData",
-                             label = "Choose data set",
-                             choices = datasets,
-                             selected = "HollywoodMovies"),
-                 rHandsontableOutput("hot_preload")
-                 
+                 condition = "input.inputData=='Upload data'",
+                 h5("Upload Options"),
+                 fileInput('file1', 'Choose a file to upload.',
+                           accept = c(
+                             'text/csv',
+                             'text/comma-separated-values',
+                             'text/tab-separated-values',
+                             'text/plain',
+                             '.csv',
+                             '.tsv'
+                           )
+                 ),
+                 p("Note: The file size limit is 5MB. Larger files will take longer to upload.
+                  Accepted formats include: .txt, .csv, and .tsv files."),
+                 actionButton("hideDataOptions", "Toggle upload options"),
+                 hidden(
+                   tags$div(id = "dataOptions",
+                            checkboxInput('header', 'Header', TRUE),
+                            radioButtons('sep', 'Separator',
+                                         c(Comma=',',
+                                           Semicolon=';',
+                                           Tab='\t'),
+                                         ','),
+                            radioButtons('quote', 'Quote',
+                                         c(None='',
+                                           'Double Quote'='"',
+                                           'Single Quote'="'"),
+                                         '"')
+                   )#divid
+                 )
                ),
-                 conditionalPanel(
-                   "input.dataEntry == 'upload'",
-                   fluidRow(
-                     column(8,
-                            fileInput('file1', 'Choose a CSV file',
-                                      accept = c('text/csv',
-                                                 'text/comma-separated-values', 
-                                                 '.csv')
-                            )
-                     ),
-                     column(4, 
-                            checkboxInput("header", label = "Header row", value = TRUE)
-                     ),
-                     conditionalPanel("output.fileUploaded",
-                                      rHandsontableOutput("hot_upload")
-                   )
-                 )       
-               ),
+               
                # br(),
                fluidRow(
                  column(6,
@@ -73,11 +78,6 @@ navbarPage(
                                     selected = NULL)
                  )
                  
-               ),
-               
-               conditionalPanel(
-                 "input.dataEntry == 'enter'",
-                 rHandsontableOutput("hot_enter")
                )
                
                
@@ -99,10 +99,39 @@ navbarPage(
     "Create a lineup",
     sidebarLayout(
       sidebarPanel(
-        h4("This is the sidebar")
-        ),
+        radioButtons("lineup", label = h4("Type of residual plot"),
+                     c("Residuals vs. fitted values" = "resid.fitted",
+                       "Residuals vs. x" = "resid.x", 
+                       "Normal Q-Q plot" = "qq"), 
+                     selected = "resid.fitted"),
+        numericInput("num", 
+                     label = h4("Number of plots"), 
+                     value = 20, min = 1, max = 20),
+        numericInput("ncols", 
+                     label = h4("Number of columns"), 
+                     value = 4, min = 1, max = 10),
+        actionButton("goButton", "Create lineup!")
+      ),
       mainPanel(
-        
+        plotOutput("lineup")
+      )
+    )
+    
+  ),
+  
+  
+  tabPanel(
+    "Observed plot",
+    sidebarLayout(
+      sidebarPanel(
+        radioButtons("plot", label = h4("Type of residual plot"),
+                     c("Residuals vs. fitted values" = "resid.fitted",
+                       "Residuals vs. x" = "resid.x", 
+                       "Normal Q-Q plot" = "qq"), 
+                     selected = "resid.fitted")
+      ),
+      mainPanel(
+        plotOutput("origPlot")
       )
     )
     
