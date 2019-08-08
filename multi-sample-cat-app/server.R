@@ -9,6 +9,10 @@ library(infer)    # tools for simulation-based inference
 library(Lock5Data)
 
 shinyServer(function(input, output, session){
+  
+  observeEvent(input$goButton, {
+    updateCheckboxInput(session, "reveal", value = FALSE)
+  })
 
   shinyjs::onclick("hideDataOptions",
                    shinyjs::toggle(id = "dataOptions", anim = TRUE))
@@ -102,6 +106,19 @@ output$lineup <- renderPlot({
 },
 height = function() {
   0.8 * session$clientData$output_lineup_width
+})
+
+output$dataPanel <- renderPrint({
+  if(!input$reveal) return()
+  data_panel <- isolate(lineupData()) %>% 
+    select(replicate, .id) %>%
+    distinct() %>%
+    filter(is.na(replicate))%>%
+    pull(.id)
+  
+  tagList(
+    tags$h3(paste0("The data plot is #", data_panel))
+  )
 })
 
 })
