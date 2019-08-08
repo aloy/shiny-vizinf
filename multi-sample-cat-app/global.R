@@ -3,5 +3,5 @@ datasets <- c(
   "fly",
   "happy",
   "NutritionStudy",
-  "StudentSurvey",
+  "StudentSurvey"
 )

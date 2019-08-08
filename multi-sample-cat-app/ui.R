@@ -1,5 +1,6 @@
 library(shiny)
 library(shinyjs)
+library(shinycssloaders)
 
 navbarPage(
   "Vizinf: Comparing groups",
@@ -8,12 +9,12 @@ navbarPage(
     sidebarLayout(
       sidebarPanel(
         useShinyjs(),
-        p("Select a preloaded data set from the below list, 
-            upload a data file, or enter the values of a variable."),           
+        p("Select a preloaded data set from the below list or 
+            upload a data file."),           
         selectInput(inputId = "inputData",
                     label = "Select data set",
                     choices = datasets,
-                    selected = "ImmuneTea"),
+                    selected = "fly"),
         conditionalPanel(
           condition = "input.inputData=='Upload data'",
           h5("Upload Options"),
@@ -47,11 +48,11 @@ navbarPage(
           )
         ),
  
-        selectInput('group', label=h4('Grouping variable'),'group'),
-        selectInput('response', label=h4('Response variable'), 'response')
+        selectInput('group', label = h4('Grouping variable'), 'group'),
+        selectInput('response', label = h4('Response variable'), 'response')
       ),
         
-      # Show a plot of the generated distribution
+      # Show spreadsheet of the generated distribution
       mainPanel(
         dataTableOutput("theData")
       )
@@ -62,11 +63,6 @@ navbarPage(
     "Lineup",
     sidebarLayout(
       sidebarPanel(
-        radioButtons("lineup", label = h4("Plot type"),
-                     c("Boxplots" = "box",
-                       "Density plots" = "den", 
-                       "Violin plots" = "violin"), 
-                     selected = "box"),
         numericInput("num", 
                      label = h4("Number of plots"), 
                      value = 20, min = 1, max = 20),
@@ -76,7 +72,7 @@ navbarPage(
         actionButton("goButton", "Create lineup!")
       ),
       mainPanel(
-        plotOutput("lineup")
+        withSpinner(plotOutput("lineup"))
       )
     )
   ),
@@ -85,16 +81,12 @@ navbarPage(
     "Data plot",
     sidebarLayout(
       sidebarPanel(
-        radioButtons("plot", label = h4("Plot type"),
-                     c("Boxplots" = "box",
-                       "Density plots" = "den", 
-                       "Violin plots" = "violin"), 
-                     selected = "box")
+        h4("Do I need anything here?")
       ),
       mainPanel(
-        plotOutput("origPlot"),
+        withSpinner(plotOutput("origPlot")),
         h4("Summary Statistics"),
-        tableOutput("basicSummary")
+        verbatimTextOutput("basicSummary")
       )
     )
   ),
