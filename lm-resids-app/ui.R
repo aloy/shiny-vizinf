@@ -100,7 +100,16 @@ navbarPage(
         numericInput("ncols", 
                      label = h4("Number of columns"), 
                      value = 4, min = 1, max = 10),
-        actionButton("goButton", "Create lineup!")
+        actionButton("goButton", "Create lineup!"),
+        conditionalPanel(
+          condition = "input.goButton > 0",
+          br(),
+          checkboxInput("reveal", "Reveal data panel"),
+          conditionalPanel(
+            condition = "input.reveal",
+            uiOutput("dataPanel")
+          )
+        )
       ),
       mainPanel(
         plotOutput("lineup")

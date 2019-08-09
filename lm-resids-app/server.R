@@ -16,6 +16,20 @@ library(broom)
 # Define server logic required to draw a histogram
 shinyServer(function(input, output, session) {
   
+  rv <- reactiveValues(show = FALSE)
+  
+  observeEvent(input$goButton, {
+    updateCheckboxInput(session, "reveal", value = FALSE)
+  })
+  
+  observeEvent(input$goButton, {
+    rv$show <- TRUE
+  })
+  
+  observeEvent(input$inputData, {
+    rv$show <- FALSE
+  })
+  
   shinyjs::onclick("hideDataOptions",
                    shinyjs::toggle(id = "dataOptions", anim = TRUE))
 
@@ -87,7 +101,8 @@ shinyServer(function(input, output, session) {
 
     df <- df %>%
       bind_rows() %>%
-      mutate(.sample = rep(1:N, each = nrow(obs)),
+      mutate(#.sample = rep(1:N, each = nrow(obs)),
+             replicate = rep(c(1:(N-1), NA), each = nrow(obs)),
              .id = sample(N, size = N, replace = FALSE) %>% rep(., each = nrow(obs)))
 
     df
@@ -119,7 +134,8 @@ shinyServer(function(input, output, session) {
                                 labs(x = "N(0, 1) quantiles", y = "Standardized residuals")
         )
         lineup_plot +
-          facet_wrap(~.id, ncol = lineup_cols)
+          facet_wrap(~.id, ncol = lineup_cols) +
+          theme_bw()
       }
     },
     height = function() {
@@ -150,6 +166,20 @@ shinyServer(function(input, output, session) {
         theme_bw()
     })
     
+    
+    output$dataPanel <- renderPrint({
+      req(input$reveal)
+      
+      data_panel <- isolate(lineupData()) %>% 
+        select(replicate, .id) %>%
+        distinct() %>%
+        filter(is.na(replicate))%>%
+        pull(.id)
+      
+      tagList(
+        tags$h3(paste0("The data plot is #", data_panel))
+      )
+    })
     
 
   })
