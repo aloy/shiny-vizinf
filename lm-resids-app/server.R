@@ -24,66 +24,52 @@ shinyServer(function(input, output, session) {
   
   theData <- reactive({
     if(input$inputData == "Upload data") {
-      
-      inFile1 <- input$file1
-      if (is.null(inFile1)) return(NULL)
-      
-      return(read.csv(inFile1$datapath, header=input$header, sep=input$sep, quote=input$quote))
+      req(input$file1)
+      return(read.csv(input$file1$datapath, header = input$header, sep = input$sep, quote = input$quote))
     } else {
       return(get(input$inputData))
     }
   })
   
-  
-  output$fileUploaded <- reactive({
-    inFile1 <- input$file1
-    return(!is.null(inFile1))
+  quant_vars <- reactive({
+    req(theData())
+    colnames(theData())[sapply(theData(), is.numeric)]
   })
   
-  # outputOptions(output, 'fileUploaded', suspendWhenHidden = FALSE)
-  
-    
-  # upload_data <- reactive({
-  #   inFile1 <- input$file1
-  #   try(read.csv(inFile1$datapath, header = input$header), silent = TRUE)
-  # })
-  
-  observe({
-    quant_vars <- colnames(theData())[sapply(theData(), is.numeric)]
-    # upload_quant_vars <- colnames(upload_data())[sapply(upload_data(), is.numeric)]
-    
-    updateSelectInput(
-      session = session,
-      inputId = "Xvar",
-      choices = quant_vars
-    )
-    
-    updateSelectInput(
-      session = session,
-      inputId = "Yvar",
-      choices = quant_vars,
-      selected = quant_vars[2]
-    )
-    
+  output$choose_x <- renderUI({
+    selectInput("Xvar", "X-variable", c("Choose one" = "", quant_vars()))
   })
   
+  output$choose_y <- renderUI({
+    selectInput("Yvar", "Y-variable", c("Choose one" = "", quant_vars()))
+  })
   
   
   regData <- reactive({
-    data <- theData()
-    if(is.null(data)){
-      data <- data.frame(x = 0, y = 0)
-    } else {
-      req(input$Xvar)
-      req(input$Yvar)
-      data <- data[, c(input$Xvar, input$Yvar)]
-    }
-    colnames(data) <- c("x","y")
-    data
+    req(input$Xvar, input$Yvar, input$Xvar %in% colnames(theData()))
+    theData()[, c(input$Xvar, input$Yvar)]
   })
   
   mod <- reactive({
-    mod <- lm(y ~ x, data = regData())
+    lm(paste(input$Yvar, "~", input$Xvar), regData())
+  })
+  
+  
+  output$fittedEqn <- renderTable({
+    mod() %>%
+      tidy() %>%
+      select(term, estimate)
+  })
+  
+  # output$DF <- renderPrint({
+  #   head(regData())
+  #   })
+  # 
+  output$fittedLine <- renderPlot({
+    regData() %>%
+      ggplot(aes_string(input$Xvar, input$Yvar)) +
+      geom_point(shape = 1) +
+      geom_smooth(method = "lm", se = FALSE)
   })
     
   
@@ -92,10 +78,10 @@ shinyServer(function(input, output, session) {
     obs <- augment(mod())
     N <- input$num
     df <- replicate(N-1, expr = simulate(mod()), simplify = FALSE)
-    df[[N]] <- data.frame(sim_1 = obs$y)
+    df[[N]] <- data.frame(sim_1 = obs[, input$Yvar])
 
     df <- lapply(df, FUN = function(y) {
-      reg_df <- data.frame(y = y[[1]], x = obs[["x"]])
+      reg_df <- data.frame(y = y[[1]], x = obs[[input$Xvar]])
       broom::augment(lm(y ~ x, data = reg_df))
     })
 
@@ -106,26 +92,9 @@ shinyServer(function(input, output, session) {
 
     df
   })
-    
-    
 
-    output$fittedEqn <- renderTable({
-      # input$goButton
-      tidy(mod()) %>%
-        select(term, estimate)
-    })
 
-    # output$DF <- renderPrint(regData())
-
-    output$fittedLine <- renderPlot({
-      # input$goButton
-      regData() %>%
-        ggplot(aes(x, y)) +
-        geom_point(shape = 1) +
-        geom_smooth(method = "lm", se = FALSE) +
-        labs(x = input$Xvar, y = input$Yvar)
-    })
-
+  # output$lineupData <- renderPrint({lineupData()})
 
     output$lineup <- renderPlot({
       if(input$goButton > 0) {
@@ -141,7 +110,7 @@ shinyServer(function(input, output, session) {
                               resid.x = lineupData() %>%
                                 ggplot() +
                                 geom_hline(yintercept = 0, linetype = 2, color = "blue") +
-                                geom_point(aes(x = x, y = .resid), shape = 1) +
+                                geom_point(aes_string(x = input$Xvar, y = ".resid"), shape = 1) +
                                 labs(x = input$Xvar, y = "Residuals"),
                               qq = lineupData() %>%
                                 ggplot(aes(sample = .std.resid)) +
@@ -169,7 +138,7 @@ shinyServer(function(input, output, session) {
                          resid.x = obsData %>%
                            ggplot() +
                            geom_hline(yintercept = 0, linetype = 2, color = "blue") +
-                           geom_point(aes(x = x, y = .resid), shape = 1) +
+                           geom_point(aes_string(x = input$Xvar, y = ".resid"), shape = 1) +
                            labs(x = input$Xvar, y = "Residuals"),
                          qq = obsData %>%
                            ggplot(aes(sample = .std.resid)) +
@@ -177,7 +146,8 @@ shinyServer(function(input, output, session) {
                            geom_qq() +
                            labs(x = "N(0, 1) quantiles", y = "Standardized residuals")
       )
-      dataPlot
+      dataPlot +
+        theme_bw()
     })
     
     

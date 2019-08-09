@@ -65,19 +65,8 @@ navbarPage(
                
                # br(),
                fluidRow(
-                 column(6,
-                        selectInput(inputId = "Xvar",
-                                    label = "X-variable",
-                                    choices = NULL,
-                                    selected = NULL)
-                 ),
-                 column(6,
-                        selectInput(inputId = "Yvar",
-                                    label = "Y-variable",
-                                    choices = NULL,
-                                    selected = NULL)
-                 )
-                 
+                 column(6, uiOutput("choose_x")),
+                 column(6, uiOutput("choose_y"))
                )
                
                
@@ -87,6 +76,7 @@ navbarPage(
       column(8,
              # conditionalPanel("output.fileUploaded",
              withSpinner(plotOutput("fittedLine")),
+             verbatimTextOutput("DF"),
              br(),
              tableOutput("fittedEqn")
              # )
