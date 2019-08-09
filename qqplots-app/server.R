@@ -16,6 +16,10 @@ library(dplyr)
 # Define server logic required to draw a histogram
 shinyServer(function(input, output, session) {
   
+  observeEvent(input$goButton, {
+    updateCheckboxInput(session, "reveal", value = FALSE)
+  })
+  
   shinyjs::onclick("hideDataOptions",
                    shinyjs::toggle(id = "dataOptions", anim = TRUE))
   
@@ -52,71 +56,54 @@ shinyServer(function(input, output, session) {
                                     options = list(pageLength = 10,
                                                    scrollX = TRUE))
   
-  # lineupData <- reactive({
-  #   if(input$goButton > 0) {
-  #     target_var <- ifelse(is.null(input$inputVar), "x", input$inputVar)
-  #     x <- theData()[[target_var]]
-  #     N <- length(x)
-  #     npanels <- input$num
-  #     norm_sims <- lapply(1:(npanels - 1), function(x) rnorm(N))
-  #     
-  #     data.frame(
-  #       x = c(unlist(norm_sims), scale(x)), 
-  #       .sample = rep(1:npanels, each = nrow(theData()))
-  #     ) %>%
-  #       mutate(.id = sample(npanels, size = npanels, replace = FALSE) %>% rep(., each = N))
-  #   }
-  # })
+  origData <- reactive({
+    target_var <- ifelse(is.null(input$inputVar), "x", input$inputVar)
+    theData()[[target_var]]
+  })
   
-  # output$lineupdata <- renderTable(lineupData())
+  lineupData <- eventReactive(input$goButton, {
+    lineup_cols <- input$ncols
+    npanels <- input$num
+    
+    N <- length(origData())
+    
+    norm_sims <- lapply(1:(npanels - 1), function(x) rnorm(N))
+    
+    data.frame(
+      x = c(unlist(norm_sims), scale(origData())), 
+      replicate = rep(c(1:(npanels-1), NA), each = N)
+    ) %>%
+      mutate(.id = sample(npanels, size = npanels, replace = FALSE) %>% rep(., each = N))
+  })
   
   output$lineup <- renderPlot({
-    if(input$goButton > 0) {
-      input$goButton
-      lineup_type <- isolate(input$lineup)
-      lineup_cols <- isolate(input$ncols)
-      
-      target_var <- ifelse(is.null(input$inputVar), "x", input$inputVar)
-      x <- theData()[[target_var]]
-      N <- length(x)
-      npanels <- input$num
-      norm_sims <- lapply(1:(npanels - 1), function(x) rnorm(N))
-      
-      lineupData <- data.frame(
-        x = c(unlist(norm_sims), scale(x)), 
-        .sample = rep(1:npanels, each = nrow(theData()))
-      ) %>%
-        mutate(.id = sample(npanels, size = npanels, replace = FALSE) %>% rep(., each = N))
-      
-      detrend <- FALSE
-      if(input$detrend == "detrend") detrend <- TRUE
-      
-      qqplot_lineup <- lineupData %>%
-        ggplot(aes(sample = x)) +
-        stat_qq_line(linetype = 2, detrend = detrend) +
-        stat_qq_point(detrend = detrend) + 
-        facet_wrap(~.id, ncol = input$ncols) +
-        theme_bw() + 
-        labs(x = "N(0, 1) quantiles", y = "Sample quantiles")
-      
-      if(detrend) {
-        qqplot_lineup +
-          coord_fixed(ratio = 1, ylim = range(lineupData$x))
-      }
-      
-      qqplot_lineup
+    detrend <- FALSE
+    if(input$detrend == "detrend") detrend <- TRUE
+    
+    qqplot_lineup <- lineupData() %>%
+      ggplot(aes(sample = x)) +
+      stat_qq_line(linetype = 2, detrend = detrend) +
+      stat_qq_point(detrend = detrend) + 
+      facet_wrap(~.id, ncol = input$ncols) +
+      theme_bw() + 
+      labs(x = "N(0, 1) quantiles", y = "Sample quantiles")
+    
+    if(detrend) {
+      qqplot_lineup +
+        coord_fixed(ratio = 1, ylim = range(lineupData()$x))
     }
-  
+    
+    qqplot_lineup
+    # }
+    
   }, 
   height = function() {
     0.8 * session$clientData$output_lineup_width
   }
-)
+  )
   
   output$origPlot <- renderPlot({
-    target_var <- ifelse(is.null(input$inputVar), "x", input$inputVar)
-    df <- theData()[target_var]
-    colnames(df) <- "x"
+    df <- data.frame(x = origData())
 
     if(input$standard) df <- as.data.frame(scale(df))
 
@@ -137,6 +124,20 @@ shinyServer(function(input, output, session) {
 
     qqplot_lineup
 
+  })
+  
+  output$dataPanel <- renderPrint({
+    req(input$reveal)
+    
+    data_panel <- lineupData() %>% 
+      select(replicate, .id) %>%
+      distinct() %>%
+      filter(is.na(replicate))%>%
+      pull(.id)
+    
+    tagList(
+      tags$h3(paste0("The data plot is #", data_panel))
+    )
   })
 
   
