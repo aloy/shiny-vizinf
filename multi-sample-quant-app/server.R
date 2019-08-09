@@ -12,6 +12,10 @@ shinyServer(function(input, output, session){
   rv <- reactiveValues(show = FALSE)
   
   observeEvent(input$goButton, {
+    updateCheckboxInput(session, "reveal", value = FALSE)
+  })
+  
+  observeEvent(input$goButton, {
     rv$show <- TRUE
   })
   
@@ -122,15 +126,15 @@ output$lineup <- renderPlot({
   lineup_plot <- switch(lineup_type,
                         box = lineupData() %>%
                           ggplot() +
-                          geom_boxplot(aes(x = group, y = response, fill = group, color = group), alpha = 0.6) +
+                          geom_boxplot(aes(x = group, y = response, fill = group, color = group), alpha = 0.4) +
                           geom_point(aes(x = group, y = mean, fill = group, color = group), 
                                      data = groupMeans()),
                         den = lineupData() %>%
                           ggplot() +
-                          geom_density(aes(x = response, fill = group, color = group), alpha = 0.6),
+                          geom_density(aes(x = response, fill = group, color = group), alpha = 0.4),
                         violin = lineupData() %>%
                           ggplot() +
-                          geom_violin(aes(x = group, y = response, fill = group, color = group), alpha = 0.6) +
+                          geom_violin(aes(x = group, y = response, fill = group, color = group), alpha = 0.4) +
                           geom_point(aes(x = group, y = mean, fill = group, color = group), 
                                      data = groupMeans())
   )
@@ -143,6 +147,20 @@ output$lineup <- renderPlot({
 },
 height = function() {
   0.8 * session$clientData$output_lineup_width
+})
+
+output$dataPanel <- renderPrint({
+  req(input$reveal)
+  
+  data_panel <- isolate(lineupData()) %>% 
+    select(replicate, .id) %>%
+    distinct() %>%
+    filter(is.na(replicate))%>%
+    pull(.id)
+  
+  tagList(
+    tags$h3(paste0("The data plot is #", data_panel))
+  )
 })
 
 })
