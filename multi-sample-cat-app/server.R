@@ -20,23 +20,22 @@ shinyServer(function(input, output, session){
   
   theData <- reactive({
     if(input$inputData == "Upload data") {
-      
-      inFile1 <- input$file1
-      if (is.null(inFile1)) return(NULL)
-      
-      return(read.csv(inFile1$datapath, header=input$header, sep=input$sep, quote=input$quote))
+      req(input$file1)
+      return(read.csv(input$file1$datapath, header = input$header, sep = input$sep, quote = input$quote))
     } else {
       return(get(input$inputData))
     }
   })
+  
+  cvars <- reactive({
+    colnames(theData())[sapply(theData(), is.factor)]
+  })
 
-observe({
-  data <- theData()
-  cvars <- colnames(data)[sapply(data,is.factor)]
-  updateSelectInput(session, 'group', choices = cvars)
-  updateSelectInput(session, 'response', choices = cvars, selected = cvars[2])
-})  
-
+  observe({
+    updateSelectInput(session, 'group', choices = cvars())
+    updateSelectInput(session, 'response', choices = cvars(), selected = cvars()[2])
+  })  
+  
 
 output$theData <- renderDataTable(theData(), 
                                   options = list(pageLength = 10,
@@ -51,7 +50,7 @@ filteredData <- reactive({
       data <- data.frame(group = 0, response = 0)
     }
   }else{
-    data <- data[,c(input$group,input$response)]
+    data <- data[, c(input$group, input$response)]
     names(data) <- c("group","response")
   }
   na.omit(data)
@@ -87,29 +86,28 @@ lineupData <- reactive({
 
 
 output$lineup <- renderPlot({
-  if(input$goButton > 0) {
-    input$goButton
-    lineup_type <- isolate(input$lineup)
-    lineup_cols <- isolate(input$ncols)
+  req(lineupData())
+  lineup_type <- isolate(input$lineup)
+  lineup_cols <- isolate(input$ncols)
   
-    ggplot(data = lineupData()) +
-      geom_mosaic(aes(x = product(response, group), fill = response), na.rm = TRUE) + 
-      facet_wrap(~.id, ncol = lineup_cols) +
-      labs(x = input$group, y = input$response) + 
-      theme_minimal() +
-      scale_fill_colorblind() +
-      theme(
-        legend.position = "none",
-        axis.text = element_blank()
-      )
-  }
+  ggplot(data = lineupData()) +
+    geom_mosaic(aes(x = product(response, group), fill = response), na.rm = TRUE) + 
+    facet_wrap(~.id, ncol = lineup_cols) +
+    labs(x = input$group, y = input$response) + 
+    theme_minimal() +
+    scale_fill_colorblind() +
+    theme(
+      legend.position = "none",
+      axis.text = element_blank()
+    )
 },
 height = function() {
   0.8 * session$clientData$output_lineup_width
 })
 
 output$dataPanel <- renderPrint({
-  if(!input$reveal) return()
+  req(input$reveal)
+  
   data_panel <- isolate(lineupData()) %>% 
     select(replicate, .id) %>%
     distinct() %>%
