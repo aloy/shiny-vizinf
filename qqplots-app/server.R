@@ -26,24 +26,24 @@ shinyServer(function(input, output, session) {
       return(data.frame(x = as.numeric(unlist(strsplit(txt, "\\s|\\n")))))
     } else {
       if(input$inputData == "Upload data") {
+        req(input$file1)
+        return(read.csv(input$file1$datapath, header = input$header, sep = input$sep, quote = input$quote))
         
-        inFile1 <- input$file1
-        if (is.null(inFile1)) return(NULL)
-        
-        return(read.csv(inFile1$datapath, header=input$header, sep=input$sep, quote=input$quote))
       } else {
         return(get(input$inputData))
       }
     } 
   })
+  
+  quant_vars <- reactive({
+    colnames(theData())[sapply(theData(), is.numeric)]
+  })
 
   observe({
-    quant_vars <- colnames(theData())[sapply(theData(), is.numeric)]
-    
     updateSelectInput(
       session = session,
       inputId = "inputVar",
-      choices = quant_vars
+      choices = quant_vars()
     )
   })  
 
@@ -89,7 +89,7 @@ shinyServer(function(input, output, session) {
         mutate(.id = sample(npanels, size = npanels, replace = FALSE) %>% rep(., each = N))
       
       detrend <- FALSE
-      if(input$detrend == "detrend") detrend = TRUE
+      if(input$detrend == "detrend") detrend <- TRUE
       
       qqplot_lineup <- lineupData %>%
         ggplot(aes(sample = x)) +
