@@ -10,8 +10,18 @@ library(Lock5Data)
 
 shinyServer(function(input, output, session){
   
+  rv <- reactiveValues(show = FALSE)
+  
   observeEvent(input$goButton, {
     updateCheckboxInput(session, "reveal", value = FALSE)
+  })
+  
+  observeEvent(input$goButton, {
+    rv$show <- TRUE
+  })
+  
+  observeEvent(input$inputData, {
+    rv$show <- FALSE
   })
 
   shinyjs::onclick("hideDataOptions",
@@ -43,25 +53,45 @@ output$theData <- renderDataTable(theData(),
 
 
 filteredData <- reactive({
-  data <- isolate(theData())
-  #if there is no input, make a dummy dataframe
-  if(input$group == "group" && input$response == "response"){
-    if(is.null(data)){
-      data <- data.frame(group = 0, response = 0)
-    }
-  }else{
-    data <- data[, c(input$group, input$response)]
-    names(data) <- c("group","response")
-  }
+  # data <- isolate(theData())
+  # #if there is no input, make a dummy dataframe
+  # if(input$group == "group" && input$response == "response"){
+  #   if(is.null(data)){
+  #     data <- data.frame(group = 0, response = 0)
+  #   }
+  # }else{
+  #   data <- data[, c(input$group, input$response)]
+  #   names(data) <- c("group","response")
+  # }
+  
+  req(theData())
+  
+  data <- theData()[, c(input$group, input$response)]
+  names(data) <- c("group", "response")
+  
+  # data 
+  
   na.omit(data)
 })
 
+# 
+# success <- reactive({
+#   levels(filteredData()$response)[1]
+# })
+
 output$origPlot <- renderPlot({
-  ggplot(data = filteredData()) +
-    geom_mosaic(aes(x = product(response, group), fill = response), na.rm = TRUE) + 
+  dataPlot <- switch(input$plot,
+                     mosaic = ggplot(data = filteredData()) +
+                       geom_mosaic(aes(x = product(response, group), fill = response), na.rm = TRUE),
+                     bar = ggplot(data = filteredData()) +
+                       geom_bar(aes(x = group, fill = response))
+  )
+  
+  dataPlot +
     labs(x = input$group, y = input$response) + 
     theme_minimal() +
-    scale_fill_colorblind()
+    scale_fill_colorblind("")
+  
 })
 
 
@@ -73,25 +103,36 @@ output$basicSummary <- renderPrint({
 
 
 lineupData <- reactive({
-  if(input$goButton > 0) {
-      filteredData() %>%
-      specify(response ~ group) %>% 
-      hypothesize(null = "independence") %>%
-      generate(reps = input$num - 1, type = "permute") %>%
-      as_tibble() %>%
-      bind_rows(filteredData()) %>%
-      mutate(.id = sample(input$num, size = input$num, replace = FALSE) %>% rep(each = nrow(filteredData())))
-  }
+  req(input$goButton)
+  N <- isolate(input$num)
+  filteredData() %>%
+    specify(response ~ group) %>% 
+    hypothesize(null = "independence") %>%
+    generate(reps = N - 1, type = "permute") %>%
+    as_tibble() %>%
+    bind_rows(filteredData()) %>%
+    mutate(.id = sample(N, size = N, replace = FALSE) %>% rep(each = nrow(filteredData())))
 })
 
 
 output$lineup <- renderPlot({
-  req(lineupData())
-  lineup_type <- isolate(input$lineup)
+  req(rv$show)
+  # req(lineupData())
+  # lineup_type <- isolate(input$lineup_type)
   lineup_cols <- isolate(input$ncols)
   
-  ggplot(data = lineupData()) +
-    geom_mosaic(aes(x = product(response, group), fill = response), na.rm = TRUE) + 
+  lineup_plot <- switch(input$lineup_type,
+                        mosaic = ggplot(data = lineupData()) +
+                          geom_mosaic(aes(x = product(response, group), fill = response), na.rm = TRUE),
+                        bar = ggplot(data = lineupData()) +
+                          geom_bar(aes(x = group, fill = response))
+  )
+
+  
+  # lineup_plot <- ggplot(data = lineupData()) +
+    # geom_mosaic(aes(x = product(response, group), fill = response), na.rm = TRUE)
+  
+  lineup_plot + 
     facet_wrap(~.id, ncol = lineup_cols) +
     labs(x = input$group, y = input$response) + 
     theme_minimal() +

@@ -63,6 +63,9 @@ navbarPage(
     "Lineup",
     sidebarLayout(
       sidebarPanel(
+        radioButtons("lineup_type", label = h4("Plot type"),
+                     c("Mosaic plot" = "mosaic",
+                       "Stacked barchart" = "bar")),
         numericInput("num", 
                      label = h4("Number of plots"), 
                      value = 20, min = 1, max = 20),
@@ -92,7 +95,10 @@ navbarPage(
     "Data plot",
     sidebarLayout(
       sidebarPanel(
-        h4("Do I need anything here?")
+        radioButtons("plot", label = h4("Plot type"),
+                     c("Mosaic plot" = "mosaic",
+                       "Stacked barchart" = "bar"), 
+                     selected = "mosaic")
       ),
       mainPanel(
         withSpinner(plotOutput("origPlot")),
