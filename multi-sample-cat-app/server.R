@@ -7,6 +7,8 @@ library(resample)
 library(ggthemes)
 library(infer)    # tools for simulation-based inference
 library(Lock5Data)
+library(summarytools)
+library(magrittr)
 
 shinyServer(function(input, output, session){
   
@@ -84,7 +86,7 @@ output$origPlot <- renderPlot({
                      mosaic = ggplot(data = filteredData()) +
                        geom_mosaic(aes(x = product(response, group), fill = response), na.rm = TRUE),
                      bar = ggplot(data = filteredData()) +
-                       geom_bar(aes(x = group, fill = response))
+                       geom_bar(aes(x = group, fill = response), position = "fill")
   )
   
   dataPlot +
@@ -95,18 +97,38 @@ output$origPlot <- renderPlot({
 })
 
 
-output$basicSummary <- renderPrint({
-  tab <- with(filteredData(), table(group, response))
-  addmargins(tab)
+output$basicSummary <- # renderPrint({
+  renderPrint({
+    tab <- with(filteredData(), table(group, response))
+    addmargins(tab)
   })
 
+nlevels <- reactive({
+  length(levels(y()))
+})
 
+y <- reactive({
+  filteredData()[["response"]]
+})
+
+success <- reactive({
+  levels(y())[1]
+})
 
 lineupData <- reactive({
   req(input$goButton)
   N <- isolate(input$num)
-  filteredData() %>%
-    specify(response ~ group) %>% 
+  
+  if(nlevels() == 2) {
+    perms <- filteredData() %>%
+      specify(response ~ group, success = success())
+  } else {
+    perms <- filteredData() %>%
+      specify(response ~ group)
+  }
+  
+  
+  perms %>%
     hypothesize(null = "independence") %>%
     generate(reps = N - 1, type = "permute") %>%
     as_tibble() %>%
@@ -125,7 +147,7 @@ output$lineup <- renderPlot({
                         mosaic = ggplot(data = lineupData()) +
                           geom_mosaic(aes(x = product(response, group), fill = response), na.rm = TRUE),
                         bar = ggplot(data = lineupData()) +
-                          geom_bar(aes(x = group, fill = response))
+                          geom_bar(aes(x = group, fill = response), position = "fill")
   )
 
   
