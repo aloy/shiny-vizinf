@@ -16,8 +16,18 @@ library(dplyr)
 # Define server logic required to draw a histogram
 shinyServer(function(input, output, session) {
   
+  rv <- reactiveValues(show = FALSE)
+  
   observeEvent(input$goButton, {
     updateCheckboxInput(session, "reveal", value = FALSE)
+  })
+  
+  observeEvent(input$goButton, {
+    rv$show <- TRUE
+  })
+  
+  observeEvent(input$inputData, {
+    rv$show <- FALSE
   })
   
   shinyjs::onclick("hideDataOptions",
@@ -129,7 +139,7 @@ shinyServer(function(input, output, session) {
   output$dataPanel <- renderPrint({
     req(input$reveal)
     
-    data_panel <- lineupData() %>% 
+    data_panel <- isolate(lineupData()) %>% 
       select(replicate, .id) %>%
       distinct() %>%
       filter(is.na(replicate))%>%
