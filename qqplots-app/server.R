@@ -12,6 +12,7 @@ library(shinyjs)
 library(Lock5Data)
 library(qqplotr)
 library(dplyr)
+library(nullabor)
 
 # Define server logic required to draw a histogram
 shinyServer(function(input, output, session) {
@@ -68,22 +69,24 @@ shinyServer(function(input, output, session) {
   
   origData <- reactive({
     target_var <- ifelse(is.null(input$inputVar), "x", input$inputVar)
-    theData()[[target_var]]
+    data.frame(x = theData()[[target_var]])
+  })
+  
+  
+  
+  pos <- eventReactive(input$goButton, {
+    sample(input$num, size = 1)
   })
   
   lineupData <- eventReactive(input$goButton, {
     lineup_cols <- input$ncols
     npanels <- input$num
-    
-    N <- length(origData())
-    
-    norm_sims <- lapply(1:(npanels - 1), function(x) rnorm(N))
-    
-    data.frame(
-      x = c(unlist(norm_sims), scale(origData())), 
-      replicate = rep(c(1:(npanels-1), NA), each = N)
-    ) %>%
-      mutate(.id = sample(npanels, size = npanels, replace = FALSE) %>% rep(., each = N))
+
+    lineup(
+      method = null_dist("x", dist = "norm"),
+      true = na.omit(origData()),
+      pos = pos()
+    )
   })
   
   output$lineup <- renderPlot({
@@ -94,7 +97,7 @@ shinyServer(function(input, output, session) {
       ggplot(aes(sample = x)) +
       stat_qq_line(linetype = 2, detrend = detrend) +
       stat_qq_point(detrend = detrend) + 
-      facet_wrap(~.id, ncol = input$ncols) +
+      facet_wrap(~.sample, ncol = input$ncols) +
       theme_bw() + 
       labs(x = "N(0, 1) quantiles", y = "Sample quantiles")
     
@@ -113,7 +116,7 @@ shinyServer(function(input, output, session) {
   )
   
   output$origPlot <- renderPlot({
-    df <- data.frame(x = origData())
+    df <- origData()
 
     if(input$standard) df <- as.data.frame(scale(df))
 
@@ -139,14 +142,8 @@ shinyServer(function(input, output, session) {
   output$dataPanel <- renderPrint({
     req(input$reveal)
     
-    data_panel <- isolate(lineupData()) %>% 
-      select(replicate, .id) %>%
-      distinct() %>%
-      filter(is.na(replicate))%>%
-      pull(.id)
-    
     tagList(
-      tags$h3(paste0("The data plot is #", data_panel))
+      tags$h3(paste0("The data plot is #", pos()))
     )
   })
 
