@@ -110,7 +110,7 @@ navbarPage(
   
   tabPanel(
     "About",
-    h3("Comparing groups vis the lineup protocol"),
+    h3("About the lineup protocol"),
     p("This Shiny app is intended..."),
     h3("Author"),
     p("Adam Loy"),
