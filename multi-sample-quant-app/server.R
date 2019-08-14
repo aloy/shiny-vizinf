@@ -2,9 +2,7 @@ library(shiny)
 library(shinyjs)
 library(mosaic)
 library(dplyr)
-library(resample)
 library(ggthemes)
-library(infer)    # tools for simulation-based inference
 library(Lock5Data)
 
 shinyServer(function(input, output, session){
@@ -21,6 +19,10 @@ shinyServer(function(input, output, session){
   
   observeEvent(input$inputData, {
     rv$show <- FALSE
+  })
+  
+  pos <- eventReactive(input$goButton, {
+    sample(input$num, size = 1)
   })
 
   shinyjs::onclick("hideDataOptions",
@@ -46,9 +48,6 @@ shinyServer(function(input, output, session){
   })
   
 observe({
-  # data <- theData()
-  # cvars <- colnames(data)[sapply(data,is.factor)]
-  # qvars <- colnames(data)[sapply(data,is.numeric)]
   updateSelectInput(session, 'group', choices = variables()$cat)
   updateSelectInput(session, 'response', choices = variables()$quant)
 })  
@@ -103,18 +102,13 @@ output$basicSummary <- renderTable({
 lineupData <- reactive({
   req(input$goButton)
   N <- isolate(input$num)
-  filteredData() %>%
-    specify(response ~ group) %>% 
-    hypothesize(null = "independence") %>%
-    generate(reps = N - 1, type = "permute") %>%
-    as_tibble() %>%
-    bind_rows(filteredData()) %>%
-    mutate(.id = sample(N, size = N, replace = FALSE) %>% rep(each = nrow(filteredData())))
+
+    lineup(method = null_permute("group"), true = filteredData(), n = N, pos = pos())
 })
 
 groupMeans <- reactive({
   lineupData() %>%
-    group_by(.id, group) %>%
+    group_by(.sample, group) %>%
     summarize(mean = mean(response))
 })
 
@@ -139,7 +133,7 @@ output$lineup <- renderPlot({
                                      data = groupMeans())
   )
   lineup_plot +
-    facet_wrap(~.id, ncol = lineup_cols) +
+    facet_wrap(~.sample, ncol = lineup_cols) +
     scale_fill_colorblind() +
     scale_color_colorblind() +
     theme_minimal() +
@@ -152,14 +146,8 @@ height = function() {
 output$dataPanel <- renderPrint({
   req(input$reveal)
   
-  data_panel <- isolate(lineupData()) %>% 
-    select(replicate, .id) %>%
-    distinct() %>%
-    filter(is.na(replicate))%>%
-    pull(.id)
-  
   tagList(
-    tags$h3(paste0("The data plot is #", data_panel))
+    tags$h3(paste0("The data plot is #", pos()))
   )
 })
 

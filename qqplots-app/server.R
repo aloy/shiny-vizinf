@@ -85,6 +85,7 @@ shinyServer(function(input, output, session) {
     lineup(
       method = null_dist("x", dist = "norm"),
       true = na.omit(origData()),
+      n = npanels,
       pos = pos()
     )
   })

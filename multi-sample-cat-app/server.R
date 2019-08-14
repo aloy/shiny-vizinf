@@ -1,11 +1,8 @@
 library(shiny)
 library(shinyjs)
-library(mosaicCore)
 library(ggmosaic)
 library(dplyr)
-library(resample)
 library(ggthemes)
-library(infer)    # tools for simulation-based inference
 library(Lock5Data)
 library(summarytools)
 library(magrittr)
@@ -25,6 +22,11 @@ shinyServer(function(input, output, session){
   observeEvent(input$inputData, {
     rv$show <- FALSE
   })
+  
+  pos <- eventReactive(input$goButton, {
+    sample(input$num, size = 1)
+  })
+  
 
   shinyjs::onclick("hideDataOptions",
                    shinyjs::toggle(id = "dataOptions", anim = TRUE))
@@ -55,31 +57,14 @@ output$theData <- renderDataTable(theData(),
 
 
 filteredData <- reactive({
-  # data <- isolate(theData())
-  # #if there is no input, make a dummy dataframe
-  # if(input$group == "group" && input$response == "response"){
-  #   if(is.null(data)){
-  #     data <- data.frame(group = 0, response = 0)
-  #   }
-  # }else{
-  #   data <- data[, c(input$group, input$response)]
-  #   names(data) <- c("group","response")
-  # }
-  
   req(theData())
   
   data <- theData()[, c(input$group, input$response)]
   names(data) <- c("group", "response")
   
-  # data 
-  
   na.omit(data)
 })
 
-# 
-# success <- reactive({
-#   levels(filteredData()$response)[1]
-# })
 
 output$origPlot <- renderPlot({
   dataPlot <- switch(input$plot,
@@ -97,43 +82,17 @@ output$origPlot <- renderPlot({
 })
 
 
-output$basicSummary <- # renderPrint({
-  renderPrint({
+output$basicSummary <- renderPrint({
     tab <- with(filteredData(), table(group, response))
     addmargins(tab)
   })
 
-nlevels <- reactive({
-  length(levels(y()))
-})
-
-y <- reactive({
-  filteredData()[["response"]]
-})
-
-success <- reactive({
-  levels(y())[1]
-})
 
 lineupData <- reactive({
   req(input$goButton)
   N <- isolate(input$num)
   
-  if(nlevels() == 2) {
-    perms <- filteredData() %>%
-      specify(response ~ group, success = success())
-  } else {
-    perms <- filteredData() %>%
-      specify(response ~ group)
-  }
-  
-  
-  perms %>%
-    hypothesize(null = "independence") %>%
-    generate(reps = N - 1, type = "permute") %>%
-    as_tibble() %>%
-    bind_rows(filteredData()) %>%
-    mutate(.id = sample(N, size = N, replace = FALSE) %>% rep(each = nrow(filteredData())))
+  lineup(method = null_permute("group"), true = filteredData(), n = N, pos = pos())
 })
 
 
@@ -151,11 +110,8 @@ output$lineup <- renderPlot({
   )
 
   
-  # lineup_plot <- ggplot(data = lineupData()) +
-    # geom_mosaic(aes(x = product(response, group), fill = response), na.rm = TRUE)
-  
   lineup_plot + 
-    facet_wrap(~.id, ncol = lineup_cols) +
+    facet_wrap(~.sample, ncol = lineup_cols) +
     labs(x = input$group, y = input$response) + 
     theme_minimal() +
     scale_fill_colorblind() +
@@ -171,14 +127,8 @@ height = function() {
 output$dataPanel <- renderPrint({
   req(input$reveal)
   
-  data_panel <- isolate(lineupData()) %>% 
-    select(replicate, .id) %>%
-    distinct() %>%
-    filter(is.na(replicate))%>%
-    pull(.id)
-  
   tagList(
-    tags$h3(paste0("The data plot is #", data_panel))
+    tags$h3(paste0("The data plot is #", pos()))
   )
 })
 
