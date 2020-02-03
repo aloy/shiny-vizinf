@@ -6,6 +6,7 @@ library(ggthemes)
 library(Lock5Data)
 library(summarytools)
 library(magrittr)
+library(nullabor)
 
 shinyServer(function(input, output, session){
   
