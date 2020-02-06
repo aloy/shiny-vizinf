@@ -13,6 +13,7 @@ library(Lock5Data)
 library(qqplotr)
 library(dplyr)
 library(nullabor)
+library(DT)
 
 # Define server logic required to draw a histogram
 shinyServer(function(input, output, session) {
@@ -63,10 +64,10 @@ shinyServer(function(input, output, session) {
   })  
 
   
-  output$theData <- renderDataTable(theData(), 
-                                    options = list(pageLength = 10,
-                                                   scrollX = TRUE))
-  
+  output$theData <- DT::renderDataTable(theData(),
+                                        options = list(pageLength = 10,
+                                                       scrollX = TRUE))
+    
   origData <- reactive({
     target_var <- ifelse(is.null(input$inputVar), "x", input$inputVar)
     data.frame(x = theData()[[target_var]])
