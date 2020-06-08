@@ -12,6 +12,7 @@ library(shinyjs)
 library(Lock5Data)
 library(dplyr)
 library(broom)
+library(ggplot2)
 
 # Define server logic required to draw a histogram
 shinyServer(function(input, output, session) {
@@ -125,7 +126,7 @@ shinyServer(function(input, output, session) {
                               resid.x = lineupData() %>%
                                 ggplot() +
                                 geom_hline(yintercept = 0, linetype = 2, color = "blue") +
-                                geom_point(aes_string(x = input$Xvar, y = ".resid"), shape = 1) +
+                                geom_point(aes(x = x, y = .resid), shape = 1) +
                                 labs(x = input$Xvar, y = "Residuals"),
                               qq = lineupData() %>%
                                 ggplot(aes(sample = .std.resid)) +
