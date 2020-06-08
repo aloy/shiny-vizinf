@@ -92,30 +92,32 @@ shinyServer(function(input, output, session) {
   })
   
   output$lineup <- renderPlot({
-    detrend <- FALSE
-    if(input$detrend == "detrend") detrend <- TRUE
-    
-    qqplot_lineup <- lineupData() %>%
-      ggplot(aes(sample = x)) +
-      stat_qq_line(linetype = 2, detrend = detrend) +
-      stat_qq_point(detrend = detrend) + 
-      facet_wrap(~.sample, ncol = input$ncols) +
-      theme_bw() + 
-      labs(x = "N(0, 1) quantiles", y = "Sample quantiles")
-    
-    if(detrend) {
-      qqplot_lineup +
-        coord_fixed(ratio = 1, ylim = range(lineupData()$x))
+    if(input$goButton > 0) {
+      input$goButton
+      detrend <- FALSE
+      if(input$detrend == "detrend") detrend <- TRUE
+      
+      qqplot_lineup <- lineupData() %>%
+        ggplot(aes(sample = x)) +
+        stat_qq_line(linetype = 2, detrend = detrend) +
+        stat_qq_point(detrend = detrend) + 
+        facet_wrap(~.sample, ncol = input$ncols) +
+        theme_bw() + 
+        labs(x = "N(0, 1) quantiles", y = "Sample quantiles")
+      
+      if(detrend) {
+        qqplot_lineup +
+          coord_fixed(ratio = 1, ylim = range(lineupData()$x))
+      }
+      
+      qqplot_lineup
+      # }
+      
     }
-    
-    qqplot_lineup
-    # }
-    
   }, 
   height = function() {
     0.8 * session$clientData$output_lineup_width
-  }
-  )
+  })
   
   output$origPlot <- renderPlot({
     df <- origData()
