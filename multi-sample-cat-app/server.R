@@ -7,6 +7,7 @@ library(Lock5Data)
 library(summarytools)
 library(magrittr)
 library(nullabor)
+library(DT)
 
 shinyServer(function(input, output, session){
   
@@ -52,7 +53,7 @@ shinyServer(function(input, output, session){
   })  
   
 
-output$theData <- renderDataTable(theData(), 
+output$theData <- DT::renderDataTable(theData(), 
                                   options = list(pageLength = 10,
                                                  scrollX = TRUE))
 

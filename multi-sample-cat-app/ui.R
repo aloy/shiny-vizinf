@@ -54,7 +54,7 @@ navbarPage(
         
       # Show spreadsheet of the generated distribution
       mainPanel(
-        dataTableOutput("theData")
+        DT::dataTableOutput("theData")
       )
     )
   ),
