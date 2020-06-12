@@ -4,6 +4,7 @@ library(mosaic)
 library(dplyr)
 library(ggthemes)
 library(Lock5Data)
+library(DT)
 
 shinyServer(function(input, output, session){
   
@@ -53,9 +54,13 @@ observe({
 })  
 
 
-output$theData <- renderDataTable(theData(), 
+output$theData <- DT::renderDataTable(data.table(theData()),
                                   options = list(pageLength = 10,
                                                  scrollX = TRUE))
+
+# output$theData <- renderPrint({
+#   str(theData())
+# })
 
 
 filteredData <- reactive({
