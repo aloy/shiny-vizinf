@@ -79,7 +79,7 @@ navbarPage(
       
       # Show a plot of the generated distribution
       mainPanel(
-        dataTableOutput("theData")
+        DT::dataTableOutput("theData")
       )
     )
   ),
