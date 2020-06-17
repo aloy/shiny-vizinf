@@ -119,7 +119,8 @@ output$lineup <- renderPlot({
     scale_fill_colorblind() +
     theme(
       legend.position = "none",
-      axis.text = element_blank()
+      axis.text = element_blank(),
+      axis.ticks = element_blank()
     )
 },
 height = function() {
