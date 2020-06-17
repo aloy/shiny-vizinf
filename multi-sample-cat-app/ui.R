@@ -71,7 +71,7 @@ navbarPage(
                      value = 20, min = 1, max = 20),
         numericInput("ncols", 
                      label = h4("Number of columns"), 
-                     value = 4, min = 1, max = 10),
+                     value = 4, min = 1, max = 10, step = 1),
         actionButton("goButton", "Create lineup!"),
         
         conditionalPanel(
