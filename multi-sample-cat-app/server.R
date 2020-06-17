@@ -79,7 +79,10 @@ output$origPlot <- renderPlot({
   dataPlot +
     labs(x = input$group, y = input$response) + 
     theme_bw() +
-    scale_fill_colorblind("")
+    scale_fill_colorblind("") +
+    theme(
+      axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)
+    )
   
 })
 
@@ -119,8 +122,7 @@ output$lineup <- renderPlot({
     scale_fill_colorblind() +
     theme(
       legend.position = "none",
-      axis.text = element_blank(),
-      axis.ticks = element_blank()
+      axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)
     )
 },
 height = function() {
