@@ -141,7 +141,7 @@ output$lineup <- renderPlot({
     facet_wrap(~.sample, ncol = lineup_cols) +
     scale_fill_colorblind() +
     scale_color_colorblind() +
-    theme_minimal() +
+    theme_bw() +
     theme(legend.position = "none") 
 },
 height = function() {
