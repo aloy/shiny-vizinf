@@ -78,7 +78,7 @@ output$origPlot <- renderPlot({
   
   dataPlot +
     labs(x = input$group, y = input$response) + 
-    theme_minimal() +
+    theme_bw() +
     scale_fill_colorblind("")
   
 })
@@ -115,7 +115,7 @@ output$lineup <- renderPlot({
   lineup_plot + 
     facet_wrap(~.sample, ncol = lineup_cols) +
     labs(x = input$group, y = input$response) + 
-    theme_minimal() +
+    theme_bw() +
     scale_fill_colorblind() +
     theme(
       legend.position = "none",
