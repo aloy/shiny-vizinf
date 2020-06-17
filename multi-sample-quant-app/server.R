@@ -5,6 +5,7 @@ library(dplyr)
 library(ggthemes)
 library(Lock5Data)
 library(DT)
+library(nullabor)
 
 shinyServer(function(input, output, session){
   
