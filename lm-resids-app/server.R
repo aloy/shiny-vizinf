@@ -13,6 +13,7 @@ library(Lock5Data)
 library(dplyr)
 library(broom)
 library(ggplot2)
+data("RailsTrails", package = "Stat2Data")
 
 # Define server logic required to draw a histogram
 shinyServer(function(input, output, session) {
