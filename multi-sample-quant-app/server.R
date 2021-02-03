@@ -6,6 +6,9 @@ library(ggthemes)
 library(Lock5Data)
 library(DT)
 library(nullabor)
+library(Sleuth3)
+
+CreativeWriting <- case0101
 
 shinyServer(function(input, output, session){
   
