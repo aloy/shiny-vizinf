@@ -1,3 +1,5 @@
+RailsTrails <- read.csv("RailsTrails.csv")
+
 datasets <- c(
   "Upload data",
   "HollywoodMovies",
